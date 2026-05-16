@@ -1,0 +1,28 @@
+# Normalize line endings
+* text=auto
+
+# Python
+*.py text eol=lf
+
+# JavaScript / JSX / JSON
+*.js  text eol=lf
+*.jsx text eol=lf
+*.ts  text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+
+# Web
+*.html text eol=lf
+*.css  text eol=lf
+*.svg  text eol=lf
+
+# Docs
+*.md   text eol=lf
+
+# Binary — never touch line endings
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pyc  binary

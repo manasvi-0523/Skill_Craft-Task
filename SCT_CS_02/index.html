@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Password Strength Checker</title>
+  <meta name="description" content="Check your password strength instantly with detailed feedback on length, character variety, patterns and more." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Design Tokens ─────────────────────────────────────── */
+    :root {
+      --bg:        #0d0f1a;
+      --surface:   #13162a;
+      --card:      #181c33;
+      --border:    #252a4a;
+      --accent:    #6c63ff;
+      --accent2:   #a78bfa;
+      --text:      #e2e8f0;
+      --muted:     #8892b0;
+      --very-weak: #ff4d6d;
+      --weak:      #ff9f43;
+      --moderate:  #ffd32a;
+      --strong:    #2ed573;
+      --very-strong:#00d2ff;
+      --radius:    14px;
+      --shadow:    0 8px 32px rgba(0,0,0,.45);
+    }
+
+    /* ── Reset ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem 4rem;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(108,99,255,.18), transparent),
+        radial-gradient(ellipse 60% 50% at 80% 80%, rgba(167,139,250,.10), transparent);
+    }
+
+    /* ── Header ────────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      animation: fadeDown .6s ease both;
+    }
+    .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: .35rem .9rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 30%, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+    }
+    .subtitle {
+      margin-top: .6rem;
+      color: var(--muted);
+      font-size: .95rem;
+      max-width: 420px;
+      margin-inline: auto;
+    }
+
+    /* ── Main Card ─────────────────────────────────────────── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 2rem;
+      width: 100%;
+      max-width: 580px;
+      animation: fadeUp .6s ease .1s both;
+    }
+
+    /* ── Input ─────────────────────────────────────────────── */
+    .input-group {
+      position: relative;
+      margin-bottom: 1.4rem;
+    }
+    .input-group label {
+      display: block;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: .5rem;
+    }
+    .input-wrap {
+      position: relative;
+    }
+    #password-input {
+      width: 100%;
+      padding: .85rem 3rem .85rem 1rem;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.05rem;
+      outline: none;
+      transition: border-color .25s, box-shadow .25s;
+    }
+    #password-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108,99,255,.2);
+    }
+    #toggle-btn {
+      position: absolute;
+      right: .85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 1.1rem;
+      padding: .2rem;
+      transition: color .2s;
+    }
+    #toggle-btn:hover { color: var(--accent2); }
+
+    /* ── Strength Bar ──────────────────────────────────────── */
+    .strength-section { margin-bottom: 1.6rem; }
+    .strength-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: .55rem;
+    }
+    .strength-label-row span:first-child {
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    #strength-text {
+      font-size: .9rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      transition: color .4s;
+    }
+    .bar-track {
+      height: 8px;
+      background: var(--surface);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    #strength-bar {
+      height: 100%;
+      border-radius: 999px;
+      width: 0%;
+      transition: width .5s cubic-bezier(.4,0,.2,1), background .4s;
+    }
+    .score-text {
+      text-align: right;
+      font-size: .78rem;
+      color: var(--muted);
+      margin-top: .4rem;
+    }
+
+    /* ── Criteria Grid ─────────────────────────────────────── */
+    .criteria-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .65rem;
+      margin-bottom: 1.6rem;
+    }
+    @media (max-width: 420px) {
+      .criteria-grid { grid-template-columns: 1fr; }
+    }
+    .criterion {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: .6rem .8rem;
+      transition: border-color .3s, background .3s;
+    }
+    .criterion.pass {
+      border-color: rgba(46,213,115,.35);
+      background: rgba(46,213,115,.07);
+    }
+    .criterion.fail {
+      border-color: rgba(255,77,109,.25);
+      background: rgba(255,77,109,.05);
+    }
+    .crit-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .75rem;
+      flex-shrink: 0;
+      transition: background .3s;
+    }
+    .criterion.pass .crit-icon { background: rgba(46,213,115,.2); color: #2ed573; }
+    .criterion.fail .crit-icon { background: rgba(255,77,109,.15); color: #ff4d6d; }
+    .criterion.idle .crit-icon { background: var(--border); color: var(--muted); }
+    .crit-label {
+      font-size: .82rem;
+      font-weight: 500;
+      color: var(--muted);
+      line-height: 1.3;
+      transition: color .3s;
+    }
+    .criterion.pass .crit-label { color: var(--text); }
+
+    /* ── Feedback Panel ────────────────────────────────────── */
+    #feedback-panel {
+      border-top: 1px solid var(--border);
+      padding-top: 1.4rem;
+      display: none;
+    }
+    .panel-title {
+      font-size: .82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+      margin-bottom: .8rem;
+    }
+    .check-list { list-style: none; display: flex; flex-direction: column; gap: .4rem; }
+    .check-list li {
+      font-size: .85rem;
+      display: flex;
+      align-items: flex-start;
+      gap: .5rem;
+      line-height: 1.4;
+    }
+    .check-list li .icon { flex-shrink: 0; margin-top: .05rem; }
+    .check-list li.passed { color: #2ed573; }
+    .check-list li.failed { color: #ff7a93; }
+
+    /* ── Recommendations ───────────────────────────────────── */
+    #recs-section { margin-top: 1.2rem; display: none; }
+    .rec-item {
+      display: flex;
+      align-items: flex-start;
+      gap: .6rem;
+      background: rgba(167,139,250,.07);
+      border: 1px solid rgba(167,139,250,.2);
+      border-radius: 8px;
+      padding: .6rem .85rem;
+      font-size: .84rem;
+      color: var(--accent2);
+      margin-bottom: .5rem;
+    }
+    .rec-item::before {
+      content: "💡";
+      flex-shrink: 0;
+    }
+
+    /* ── Tips Card ─────────────────────────────────────────── */
+    .tips-card {
+      margin-top: 1.6rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem 1.4rem;
+      animation: fadeUp .6s ease .2s both;
+      width: 100%;
+      max-width: 580px;
+    }
+    .tips-card h2 {
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--accent2);
+      margin-bottom: .8rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .tips-card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: .45rem;
+    }
+    .tips-card li {
+      font-size: .83rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+    .tips-card li::before { content: "•"; color: var(--accent); font-size: 1.1rem; }
+
+    /* ── Footer ────────────────────────────────────────────── */
+    footer {
+      margin-top: 2.5rem;
+      color: var(--muted);
+      font-size: .78rem;
+      text-align: center;
+      opacity: .7;
+    }
+
+    /* ── Animations ────────────────────────────────────────── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header>
+    <div class="badge">Security Tool</div>
+    <h1>Password Strength Checker</h1>
+    <p class="subtitle">Evaluate your password against 7 security criteria and get instant, actionable feedback.</p>
+  </header>
+
+  <!-- ── Main Card ── -->
+  <div class="card" role="main">
+
+    <!-- Input -->
+    <div class="input-group">
+      <label for="password-input">Enter Your Password</label>
+      <div class="input-wrap">
+        <input
+          type="password"
+          id="password-input"
+          placeholder="Type your password…"
+          autocomplete="new-password"
+          spellcheck="false"
+          aria-label="Password input"
+        />
+        <button id="toggle-btn" aria-label="Toggle password visibility">👁</button>
+      </div>
+    </div>
+
+    <!-- Strength Bar -->
+    <div class="strength-section">
+      <div class="strength-label-row">
+        <span>Strength</span>
+        <span id="strength-text">—</span>
+      </div>
+      <div class="bar-track" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+        <div id="strength-bar"></div>
+      </div>
+      <p class="score-text" id="score-text">&nbsp;</p>
+    </div>
+
+    <!-- Criteria Grid -->
+    <div class="criteria-grid" aria-label="Password criteria">
+      <div class="criterion idle" id="crit-length">
+        <div class="crit-icon">—</div>
+        <div class="crit-label">Min. 8 characters</div>
+      </div>
+      <div class="criterion idle" id="crit-upper">
+        <div class="crit-icon">—</div>
+        <div class="crit-label">Uppercase letter</div>
+      </div>
+      <div class="criterion idle" id="crit-lower">
+        <div class="crit-icon">—</div>
+        <div class="crit-label">Lowercase letter</div>
+      </div>
+      <div class="criterion idle" id="crit-number">
+        <div class="crit-icon">—</div>
+        <div class="crit-label">Contains a number</div>
+      </div>
+      <div class="criterion idle" id="crit-special">
+        <div class="crit-icon">—</div>
+        <div class="crit-label">Special character</div>
+      </div>
+      <div class="criterion idle" id="crit-pattern">
+        <div class="crit-icon">—</div>
+        <div class="crit-label">No weak patterns</div>
+      </div>
+      <div class="criterion idle" id="crit-variety" style="grid-column: 1 / -1;">
+        <div class="crit-icon">—</div>
+        <div class="crit-label">Character variety (all 4 types)</div>
+      </div>
+    </div>
+
+    <!-- Detailed Feedback -->
+    <div id="feedback-panel" aria-live="polite">
+      <p class="panel-title">Detailed Feedback</p>
+      <ul class="check-list" id="passed-list"></ul>
+      <ul class="check-list" id="failed-list" style="margin-top:.6rem;"></ul>
+
+      <div id="recs-section">
+        <p class="panel-title" style="margin-top:1rem;">Recommendations</p>
+        <div id="recs-list"></div>
+      </div>
+    </div>
+
+  </div><!-- /.card -->
+
+  <!-- ── Tips Card ── -->
+  <div class="tips-card" role="complementary">
+    <h2>🛡️ What makes a strong password?</h2>
+    <ul>
+      <li>Use at least <strong>12 characters</strong> (16+ is excellent)</li>
+      <li>Mix <strong>uppercase and lowercase</strong> letters</li>
+      <li>Include at least <strong>2 numbers</strong></li>
+      <li>Add <strong>special characters</strong> like !@#$%^&*</li>
+      <li>Avoid <strong>dictionary words</strong> and predictable patterns</li>
+      <li>Never reuse passwords across different sites</li>
+    </ul>
+  </div>
+
+  <footer>&copy; 2026 Password Strength Checker — SCT_CS_02</footer>
+
+  <!-- ── JavaScript Logic ── -->
+  <script>
+    // ── Helpers ──────────────────────────────────────────────
+    const SPECIAL = '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~';
+    const COMMON_WORDS = ['password', 'admin', 'user', 'login', '1234', 'qwerty'];
+
+    function checkLength(pw) {
+      const len = pw.length;
+      if (len < 8)  return { score: 0, max: 3, msg: `Too short (minimum 8 characters)`, pass: false };
+      if (len < 12) return { score: 1, max: 3, msg: `Acceptable length (${len} chars)`, pass: true };
+      if (len < 16) return { score: 2, max: 3, msg: `Good length (${len} chars)`, pass: true };
+      return { score: 3, max: 3, msg: `Excellent length (${len} chars)`, pass: true };
+    }
+
+    function checkUpper(pw) {
+      const cnt = [...pw].filter(c => /[A-Z]/.test(c)).length;
+      if (!cnt) return { score: 0, max: 2, msg: 'No uppercase letters', pass: false };
+      if (cnt >= 2) return { score: 2, max: 2, msg: `${cnt} uppercase letters`, pass: true };
+      return { score: 1, max: 2, msg: 'Contains uppercase letter', pass: true };
+    }
+
+    function checkLower(pw) {
+      const cnt = [...pw].filter(c => /[a-z]/.test(c)).length;
+      if (!cnt) return { score: 0, max: 2, msg: 'No lowercase letters', pass: false };
+      if (cnt >= 2) return { score: 2, max: 2, msg: `${cnt} lowercase letters`, pass: true };
+      return { score: 1, max: 2, msg: 'Contains lowercase letter', pass: true };
+    }
+
+    function checkNumbers(pw) {
+      const cnt = [...pw].filter(c => /[0-9]/.test(c)).length;
+      if (!cnt) return { score: 0, max: 2, msg: 'No numbers', pass: false };
+      if (cnt >= 2) return { score: 2, max: 2, msg: `${cnt} numbers`, pass: true };
+      return { score: 1, max: 2, msg: 'Contains a number', pass: true };
+    }
+
+    function checkSpecial(pw) {
+      const cnt = [...pw].filter(c => SPECIAL.includes(c)).length;
+      if (!cnt) return { score: 0, max: 2, msg: 'No special characters', pass: false };
+      if (cnt >= 2) return { score: 2, max: 2, msg: `${cnt} special characters`, pass: true };
+      return { score: 1, max: 2, msg: 'Contains special character', pass: true };
+    }
+
+    function checkPatterns(pw) {
+      const issues = [];
+      const lo = pw.toLowerCase();
+      if (/abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/.test(lo))
+        issues.push('sequential letters');
+      if (/012|123|234|345|456|567|678|789/.test(pw))
+        issues.push('sequential numbers');
+      if (/(.)\1{2,}/.test(pw))
+        issues.push('repeated characters');
+      if (COMMON_WORDS.some(w => lo.includes(w)))
+        issues.push('common words');
+      if (issues.length)
+        return { score: 0, max: 2, msg: `Weak patterns: ${issues.join(', ')}`, pass: false };
+      return { score: 2, max: 2, msg: 'No common weak patterns', pass: true };
+    }
+
+    function checkVariety(pw) {
+      let t = 0;
+      if (/[A-Z]/.test(pw)) t++;
+      if (/[a-z]/.test(pw)) t++;
+      if (/[0-9]/.test(pw)) t++;
+      if ([...pw].some(c => SPECIAL.includes(c))) t++;
+      if (t === 4) return { score: 3, max: 3, msg: 'All 4 character types', pass: true };
+      if (t === 3) return { score: 2, max: 3, msg: '3 character types', pass: true };
+      if (t === 2) return { score: 1, max: 3, msg: '2 character types', pass: true };
+      return { score: 0, max: 3, msg: '1 character type only', pass: false };
+    }
+
+    function assess(pw) {
+      if (!pw) return null;
+      const checks = {
+        length:  { label: 'Length',            ...checkLength(pw) },
+        upper:   { label: 'Uppercase',          ...checkUpper(pw) },
+        lower:   { label: 'Lowercase',          ...checkLower(pw) },
+        number:  { label: 'Numbers',            ...checkNumbers(pw) },
+        special: { label: 'Special Characters', ...checkSpecial(pw) },
+        pattern: { label: 'Pattern Check',      ...checkPatterns(pw) },
+        variety: { label: 'Character Variety',  ...checkVariety(pw) }
+      };
+      const total = Object.values(checks).reduce((s, c) => s + c.score, 0);
+      const maxTotal = Object.values(checks).reduce((s, c) => s + c.max, 0);
+      const pct = (total / maxTotal) * 100;
+
+      let strength, color;
+      if (pct >= 90)      { strength = 'Very Strong'; color = 'var(--very-strong)'; }
+      else if (pct >= 70) { strength = 'Strong';      color = 'var(--strong)'; }
+      else if (pct >= 50) { strength = 'Moderate';    color = 'var(--moderate)'; }
+      else if (pct >= 30) { strength = 'Weak';        color = 'var(--weak)'; }
+      else                { strength = 'Very Weak';   color = 'var(--very-weak)'; }
+
+      return { checks, total, maxTotal, pct: Math.round(pct * 10) / 10, strength, color };
+    }
+
+    function getRecommendations(checks) {
+      const recs = [];
+      if (!checks.length.pass) recs.push('Increase length to at least 12 characters');
+      if (!checks.upper.pass)  recs.push('Add uppercase letters (A-Z)');
+      if (!checks.lower.pass)  recs.push('Add lowercase letters (a-z)');
+      if (!checks.number.pass) recs.push('Add numbers (0-9)');
+      if (!checks.special.pass) recs.push('Add special characters (!@#$%^&*)');
+      if (!checks.pattern.pass) recs.push('Avoid common patterns and words');
+      return recs;
+    }
+
+    // ── DOM updates ───────────────────────────────────────────
+    const input       = document.getElementById('password-input');
+    const toggleBtn   = document.getElementById('toggle-btn');
+    const bar         = document.getElementById('strength-bar');
+    const barTrack    = bar.parentElement;
+    const strengthTxt = document.getElementById('strength-text');
+    const scoreTxt    = document.getElementById('score-text');
+    const passedList  = document.getElementById('passed-list');
+    const failedList  = document.getElementById('failed-list');
+    const recsSection = document.getElementById('recs-section');
+    const recsList    = document.getElementById('recs-list');
+    const feedPanel   = document.getElementById('feedback-panel');
+
+    const critMap = {
+      length:  document.getElementById('crit-length'),
+      upper:   document.getElementById('crit-upper'),
+      lower:   document.getElementById('crit-lower'),
+      number:  document.getElementById('crit-number'),
+      special: document.getElementById('crit-special'),
+      pattern: document.getElementById('crit-pattern'),
+      variety: document.getElementById('crit-variety'),
+    };
+
+    function setCrit(el, pass) {
+      el.classList.remove('pass', 'fail', 'idle');
+      el.classList.add(pass ? 'pass' : 'fail');
+      el.querySelector('.crit-icon').textContent = pass ? '✓' : '✗';
+    }
+
+    function renderLi(text, cls) {
+      const li = document.createElement('li');
+      li.className = cls;
+      li.innerHTML = `<span class="icon">${cls === 'passed' ? '✓' : '✗'}</span><span>${text}</span>`;
+      return li;
+    }
+
+    function update() {
+      const pw = input.value;
+      const result = assess(pw);
+
+      if (!pw || !result) {
+        // Reset
+        bar.style.width = '0%';
+        bar.style.background = 'var(--border)';
+        barTrack.setAttribute('aria-valuenow', 0);
+        strengthTxt.textContent = '—';
+        strengthTxt.style.color = 'var(--muted)';
+        scoreTxt.textContent = '';
+        feedPanel.style.display = 'none';
+        Object.values(critMap).forEach(el => {
+          el.classList.remove('pass', 'fail');
+          el.classList.add('idle');
+          el.querySelector('.crit-icon').textContent = '—';
+        });
+        return;
+      }
+
+      // Bar
+      bar.style.width = result.pct + '%';
+      bar.style.background = result.color;
+      barTrack.setAttribute('aria-valuenow', result.pct);
+      strengthTxt.textContent = result.strength;
+      strengthTxt.style.color = result.color;
+      scoreTxt.textContent = `Score: ${result.total}/${result.maxTotal} (${result.pct}%)`;
+
+      // Criteria icons
+      Object.entries(result.checks).forEach(([key, c]) => {
+        if (critMap[key]) setCrit(critMap[key], c.pass);
+      });
+
+      // Feedback lists
+      passedList.innerHTML = '';
+      failedList.innerHTML = '';
+      Object.values(result.checks).forEach(c => {
+        if (c.pass) passedList.appendChild(renderLi(`${c.label}: ${c.msg}`, 'passed'));
+        else        failedList.appendChild(renderLi(`${c.label}: ${c.msg}`, 'failed'));
+      });
+
+      // Recommendations
+      const recs = getRecommendations(result.checks);
+      if (recs.length) {
+        recsSection.style.display = 'block';
+        recsList.innerHTML = recs.map(r => `<div class="rec-item">${r}</div>`).join('');
+      } else {
+        recsSection.style.display = 'none';
+      }
+
+      feedPanel.style.display = 'block';
+    }
+
+    input.addEventListener('input', update);
+
+    // Toggle visibility
+    toggleBtn.addEventListener('click', () => {
+      const isText = input.type === 'text';
+      input.type = isText ? 'password' : 'text';
+      toggleBtn.textContent = isText ? '👁' : '🙈';
+    });
+  </script>
+</body>
+</html>

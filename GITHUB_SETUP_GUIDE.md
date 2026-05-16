@@ -1,100 +1,99 @@
-# 📘 GitHub Setup Guide — Single Repo
+# 📘 GitHub Reference — Skill_Craft-Task
 
-> Push everything to **one** repository: `Skill_Craft-Task`
-
----
-
-## Step 1 — Create the repository on GitHub
-
-1. Go to **https://github.com/new**
-2. Fill in:
-   - **Repository name:** `Skill_Craft-Task`
-   - **Description:** `🔐 SkillCraft Technology Cybersecurity Internship — Caesar Cipher, Password Checker, Typing Behavior Research, Image Encryption`
-   - **Visibility:** Public
-3. **Do NOT** tick "Add a README file" (we already have one)
-4. Click **Create repository**
+> Repo is live at **https://github.com/manasvi-0523/Skill_Craft-Task**
 
 ---
 
-## Step 2 — Configure Git (one-time)
+## ✅ What's already done
 
-```bash
-git config --global user.name "Manasvi"
-git config --global user.email "your-email@example.com"
+| Step | Status |
+|------|--------|
+| Repo created on GitHub | ✅ |
+| All 4 task folders pushed | ✅ |
+| Root `README.md` (portfolio overview) | ✅ |
+| Per-task `README.md` files | ✅ |
+| `.gitignore` (excludes `__pycache__`, `node_modules`, `output/`) | ✅ |
+| `.gitattributes` (line-ending normalization) | ✅ |
+| `LICENSE` (MIT 2026) | ✅ |
+
+---
+
+## 🏷️ Recommended: add topics on GitHub
+
+Go to **https://github.com/manasvi-0523/Skill_Craft-Task** → click the ⚙️ gear next to **About** → add:
+
+```
+cybersecurity  python  react  streamlit  tkinter
+cryptography  password-security  keystroke-dynamics
+image-encryption  internship  skillcraft
 ```
 
 ---
 
-## Step 3 — Push from your local folder
-
-Open a terminal, navigate to the `skill_craft` folder, and run:
+## 🔄 Everyday workflow
 
 ```bash
-cd "C:\Users\Lenovo\Desktop\skill_craft"
-
-git init
+# After editing any file
 git add .
-git commit -m "Initial commit: SkillCraft Cybersecurity Internship — all 4 tasks"
-git remote add origin https://github.com/manasvi-0523/Skill_Craft-Task.git
-git branch -M main
-git push -u origin main
-```
-
-That's it. All four task folders (`SCT_CS_01` through `SCT_CS_04`) plus the root `README.md` will be pushed together.
-
----
-
-## Step 4 — Polish the repo on GitHub
-
-### Add topics
-Go to the repo page → click the ⚙️ gear next to **About** → add:
-
-```
-cybersecurity  python  react  streamlit  tkinter  cryptography
-password-security  keystroke-dynamics  image-encryption  internship
-```
-
-### Pin it to your profile
-Go to your GitHub profile → **Customize your pins** → select `Skill_Craft-Task`.
-
----
-
-## Step 5 — Add a LICENSE (optional but recommended)
-
-On GitHub: **Add file → Create new file** → name it `LICENSE` → click **Choose a license template** → select **MIT** → commit.
-
----
-
-## Everyday Git workflow
-
-```bash
-# After making changes
-git add .
-git commit -m "Short description of what changed"
+git commit -m "Brief description of what changed"
 git push
 ```
 
 ---
 
-## Troubleshooting
+## 🗂️ Repo structure (for reference)
+
+```
+Skill_Craft-Task/
+├── .gitattributes
+├── .gitignore
+├── LICENSE
+├── README.md               ← portfolio overview
+├── GITHUB_SETUP_GUIDE.md   ← this file
+│
+├── SCT_CS_01/              ← 🔐 Caesar Cipher (Python + Streamlit)
+│   ├── app.py
+│   ├── caesar.py
+│   ├── requirements.txt
+│   └── README.md
+│
+├── SCT_CS_02/              ← 🛡️ Password Checker (Python + HTML/JS)
+│   ├── password_strength_checker.py
+│   ├── index.html
+│   └── README.md
+│
+├── SCT_CS_03/              ← ⌨️ Typing Behavior (React + Vite)
+│   ├── src/
+│   ├── package.json
+│   ├── vite.config.js
+│   └── README.md
+│
+└── SCT_CS_04/              ← 🖼️ Image Encryption (Python + Tkinter)
+    ├── app.py
+    ├── encrypt.py
+    ├── decrypt.py
+    ├── gui.py
+    ├── utils.py
+    ├── requirements.txt
+    └── README.md
+```
+
+---
+
+## 🚀 Optional: deploy the web projects
+
+| Task | Platform | Command / Steps |
+|------|----------|-----------------|
+| SCT_CS_01 (Streamlit) | [Streamlit Cloud](https://streamlit.io/cloud) | Connect repo → set main file to `SCT_CS_01/app.py` → Deploy |
+| SCT_CS_02 (HTML) | GitHub Pages | Repo Settings → Pages → select `main` branch → `/SCT_CS_02` folder |
+| SCT_CS_03 (React) | [Vercel](https://vercel.com) | Import repo → Root Directory: `SCT_CS_03` → Build: `npm run build` → Output: `dist` |
+
+---
+
+## 🆘 Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
 | `remote origin already exists` | `git remote set-url origin https://github.com/manasvi-0523/Skill_Craft-Task.git` |
 | `failed to push — rejected` | `git pull origin main --rebase` then `git push` |
-| `Permission denied (publickey)` | Use HTTPS URL (above) or add an SSH key in GitHub Settings |
-
----
-
-## What the repo will look like
-
-```
-Skill_Craft-Task/
-├── SCT_CS_01/          # Caesar Cipher Tool
-├── SCT_CS_02/          # Password Strength Checker
-├── SCT_CS_03/          # Typing Behavior Research
-├── SCT_CS_04/          # Image Encryption Tool
-└── README.md
-```
-
-Each subfolder has its own `README.md` with full documentation for that task.
+| Nested `.git` warning again | `Remove-Item -Recurse -Force <subfolder>\.git` then `git add .` |

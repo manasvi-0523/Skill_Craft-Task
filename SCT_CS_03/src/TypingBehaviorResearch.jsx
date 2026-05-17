@@ -75,6 +75,23 @@ function Stat({ label, value, color, sub }) {
   );
 }
 
+/* ── Button ────────────────────────────────────────────────────────────── */
+function Btn({ onClick, disabled, children, variant = "accent" }) {
+  const colors = {
+    accent: { bg: T.accent, fg: "#0d1117" },
+    ghost: { bg: "transparent", fg: T.muted, border: `1px solid ${T.border}` },
+    danger: { bg: "transparent", fg: T.danger, border: `1px solid ${T.danger}` },
+  }[variant];
+  return (
+    <button onClick={onClick} disabled={disabled} style={{
+      padding: "9px 20px", borderRadius: 6, fontSize: 14, fontWeight: 600,
+      fontFamily: T.sans, cursor: disabled ? "not-allowed" : "pointer",
+      border: colors.border || "none", background: colors.bg, color: colors.fg,
+      opacity: disabled ? 0.4 : 1, transition: "opacity 0.15s",
+    }}>{children}</button>
+  );
+}
+
 /* ── Main component ────────────────────────────────────────────────────── */
 export default function TypingBehaviorResearch() {
   // phase: "idle" | "recording" | "review"
@@ -86,6 +103,7 @@ export default function TypingBehaviorResearch() {
   const [totalKeys, setTotalKeys] = useState(0);
   const [backspaces, setBackspaces] = useState(0);
   const [dwell, setDwell] = useState([]);
+  const [elapsedMs, setElapsedMs] = useState(0);
 
   const sessionRef = useRef(null);
   const lastTimeRef = useRef(null);
@@ -96,10 +114,12 @@ export default function TypingBehaviorResearch() {
 
   /* Start */
   const startSession = useCallback(() => {
-    sessionRef.current = Date.now();
+    const now = Date.now();
+    sessionRef.current = now;
     lastTimeRef.current = null;
     totalKeysRef.current = 0;
     isRecRef.current = true;
+    setElapsedMs(0);
     setPhase("recording");
     setInputText(""); setKeyLog([]); setKeyFreq({});
     setWpmHistory([]); setTotalKeys(0); setBackspaces(0); setDwell([]);
@@ -110,6 +130,9 @@ export default function TypingBehaviorResearch() {
   const stopSession = useCallback(() => {
     isRecRef.current = false;
     clearInterval(wpmTimer.current);
+    if (sessionRef.current) {
+      setElapsedMs(Date.now() - sessionRef.current);
+    }
     setPhase("review");
   }, []);
 
@@ -128,6 +151,7 @@ export default function TypingBehaviorResearch() {
       if (!sessionRef.current) return;
       const elapsed = Date.now() - sessionRef.current;
       const wpm = calcWPM(totalKeysRef.current, elapsed);
+      setElapsedMs(elapsed);
       setWpmHistory(h => [...h.slice(-29), { t: Math.round(elapsed / 1000), wpm }]);
     }, 3000);
     return () => clearInterval(wpmTimer.current);
@@ -158,14 +182,13 @@ export default function TypingBehaviorResearch() {
 
   /* Export */
   const exportData = useCallback(() => {
-    const elapsed = sessionRef.current ? Date.now() - sessionRef.current : 0;
     const blob = new Blob([JSON.stringify({
       timestamp: new Date().toISOString(),
-      session_duration_s: Math.round(elapsed / 1000),
+      session_duration_s: Math.round(elapsedMs / 1000),
       total_keystrokes: totalKeys,
       backspaces,
       accuracy_pct: totalKeys ? Math.max(0, Math.round(((totalKeys - backspaces) / totalKeys) * 100)) : 100,
-      avg_wpm: calcWPM(totalKeys, elapsed),
+      avg_wpm: calcWPM(totalKeys, elapsedMs),
       avg_key_interval_ms: dwell.length ? Math.round(dwell.reduce((a, b) => a + b, 0) / dwell.length) : 0,
       key_frequency: keyFreq,
       wpm_timeline: wpmHistory,
@@ -174,11 +197,10 @@ export default function TypingBehaviorResearch() {
     a.href = URL.createObjectURL(blob);
     a.download = `typing_session_${Date.now()}.json`;
     a.click();
-  }, [totalKeys, backspaces, dwell, keyFreq, wpmHistory]);
+  }, [elapsedMs, totalKeys, backspaces, dwell, keyFreq, wpmHistory]);
 
-  /* Derived */
-  const elapsed = sessionRef.current ? Date.now() - sessionRef.current : 0;
-  const currentWPM = calcWPM(totalKeys, elapsed);
+  /* Derived — all from state, no refs or impure calls in render */
+  const currentWPM = calcWPM(totalKeys, elapsedMs);
   const accuracy = totalKeys === 0 ? 100 : Math.max(0, Math.round(((totalKeys - backspaces) / totalKeys) * 100));
   const avgInterval = dwell.length ? Math.round(dwell.reduce((a, b) => a + b, 0) / dwell.length) : 0;
   const maxFreq = Math.max(...Object.values(keyFreq), 1);
@@ -190,22 +212,6 @@ export default function TypingBehaviorResearch() {
   const card = { background: T.surface, borderRadius: 6, padding: 20 };
   const label = { fontSize: 11, color: T.muted, textTransform: "uppercase", letterSpacing: "0.06em" };
   const hr = { border: "none", borderTop: `1px solid ${T.border}`, margin: "24px 0" };
-
-  const Btn = ({ onClick, disabled, children, variant = "accent" }) => {
-    const colors = {
-      accent: { bg: T.accent, fg: "#0d1117" },
-      ghost: { bg: "transparent", fg: T.muted, border: `1px solid ${T.border}` },
-      danger: { bg: "transparent", fg: T.danger, border: `1px solid ${T.danger}` },
-    }[variant];
-    return (
-      <button onClick={onClick} disabled={disabled} style={{
-        padding: "9px 20px", borderRadius: 6, fontSize: 14, fontWeight: 600,
-        fontFamily: T.sans, cursor: disabled ? "not-allowed" : "pointer",
-        border: colors.border || "none", background: colors.bg, color: colors.fg,
-        opacity: disabled ? 0.4 : 1, transition: "opacity 0.15s",
-      }}>{children}</button>
-    );
-  };
 
   /* ── RENDER ─────────────────────────────────────────────────────────── */
   return (

@@ -7,7 +7,6 @@ Run: python -m streamlit run app.py
 import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
-import html
 from caesar import encrypt, decrypt, brute_force, letter_frequency, cipher_stats, ENGLISH_FREQ
 
 # ─── Page config ─────────────────────────────────────────────────────────────
@@ -199,16 +198,13 @@ with tab1:
 
         if result and result != "__empty__":
             bg = "#0d2b1a" if acolor == "#00e5a0" else "#0d1a2b"
-            # Escape HTML to prevent tags from showing
-            escaped_result = html.escape(result)
+            # Render output via st.code — never injected into HTML
             st.markdown(f"""
             <div style="background:{bg}; border:1.5px solid {acolor}; border-radius:8px;
-                        padding:16px 18px; font-family:'Space Mono',monospace; font-size:14px;
-                        color:{acolor}; min-height:155px; word-break:break-all;
-                        line-height:1.8; white-space:pre-wrap; overflow-wrap:anywhere;">
-{escaped_result}
-            </div>
+                        padding:4px 8px 8px;">
             """, unsafe_allow_html=True)
+            st.code(result, language=None)
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # Stats
             stats = cipher_stats(result)
@@ -485,18 +481,15 @@ with tab2:
 
             top = results[0]
             confidence = min(round(((top['score'] + 300) / 400) * 100, 1), 99.9)
+            top_text_display = top['text'][:250] + ('...' if len(top['text']) > 250 else '')
 
-            # Escape HTML in the decrypted text
-            escaped_top_text = html.escape(top['text'][:250])
-            truncated = '...' if len(top['text']) > 250 else ''
-            
+            # Header row: shift + confidence (no user text injected into HTML)
             st.markdown(f"""
             <div style="background:#0d2b1a; border:1px solid #00e5a0; border-radius:10px;
                         padding:20px 24px; margin:16px 0;">
                 <p style="font-family:'Space Mono',monospace; font-size:11px; color:#00e5a0;
-                          letter-spacing:2px; margin:0 0 14px;">✓  MOST LIKELY RESULT</p>
-                <div style="display:flex; align-items:flex-start;
-                            gap:24px; flex-wrap:wrap;">
+                          letter-spacing:2px; margin:0 0 14px;">&#10003;  MOST LIKELY RESULT</p>
+                <div style="display:flex; align-items:center; gap:32px; flex-wrap:wrap;">
                     <div style="text-align:center; min-width:60px;">
                         <div style="color:#8b949e; font-size:10px;
                                     font-family:'Space Mono',monospace; margin-bottom:4px;">SHIFT</div>
@@ -504,31 +497,21 @@ with tab2:
                                     font-family:'Space Mono',monospace;
                                     font-weight:700; line-height:1;">{top['shift']}</div>
                     </div>
-                    <div style="flex:1; min-width:220px;">
-                        <div style="color:#8b949e; font-size:10px;
-                                    font-family:'Space Mono',monospace; margin-bottom:6px;">
-                            DECRYPTED TEXT
-                        </div>
-                        <div style="color:#e6edf3; font-size:15px;
-                                    font-family:'Space Mono',monospace;
-                                    background:#161b22; padding:12px 14px;
-                                    border-radius:6px; word-break:break-all; line-height:1.6;">
-                            {escaped_top_text}{truncated}
-                        </div>
-                    </div>
                     <div style="text-align:center; min-width:80px;">
                         <div style="color:#8b949e; font-size:10px;
-                                    font-family:'Space Mono',monospace; margin-bottom:4px;">
-                            CONFIDENCE
-                        </div>
+                                    font-family:'Space Mono',monospace; margin-bottom:4px;">CONFIDENCE</div>
                         <div style="color:#ffa94d; font-size:26px;
-                                    font-family:'Space Mono',monospace; font-weight:700;">
-                            {confidence}%
-                        </div>
+                                    font-family:'Space Mono',monospace; font-weight:700;">{confidence}%</div>
                     </div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
+
+            # Decrypted text rendered by Streamlit — never injected into HTML
+            st.markdown("""<p style="font-family:'Space Mono',monospace; font-size:11px;
+                          color:#8b949e; letter-spacing:2px; margin:4px 0 6px;">
+                          DECRYPTED TEXT</p>""", unsafe_allow_html=True)
+            st.code(top_text_display, language=None)
 
             st.markdown("""
             <p style="font-family:'Space Mono',monospace; font-size:11px; color:#8b949e;
@@ -562,20 +545,18 @@ with tab2:
                 for r in results:
                     tag   = "✓ BEST" if r['likely'] else f"shift {r['shift']:2d}"
                     color = "#00e5a0" if r['likely'] else "#8b949e"
-                    # Escape HTML in the text
-                    escaped_text = html.escape(r['text'][:100])
-                    truncated = '...' if len(r['text']) > 100 else ''
+                    preview = r['text'][:100] + ('...' if len(r['text']) > 100 else '')
+                    # Label row in HTML (no user text)
                     st.markdown(f"""
-                    <div style="display:flex; gap:16px; padding:8px 0;
+                    <div style="display:flex; gap:16px; padding:6px 0 2px;
                                 border-bottom:1px solid #1c2128;
                                 font-family:'Space Mono',monospace; font-size:12px;">
                         <span style="color:{color}; min-width:68px;">{tag}</span>
                         <span style="color:#555; min-width:80px;">score {r['score']:.1f}</span>
-                        <span style="color:#e6edf3; word-break:break-all;">
-                            {escaped_text}{truncated}
-                        </span>
                     </div>
                     """, unsafe_allow_html=True)
+                    # Text rendered safely by Streamlit
+                    st.text(preview)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

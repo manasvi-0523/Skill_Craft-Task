@@ -7,6 +7,7 @@ Run: python -m streamlit run app.py
 import streamlit as st
 import matplotlib.pyplot as plt
 import numpy as np
+import html as _html
 from caesar import encrypt, decrypt, brute_force, letter_frequency, cipher_stats, ENGLISH_FREQ
 
 # ─── Page config ─────────────────────────────────────────────────────────────
@@ -198,13 +199,27 @@ with tab1:
 
         if result and result != "__empty__":
             bg = "#0d2b1a" if acolor == "#00e5a0" else "#0d1a2b"
-            # Render output via st.code — never injected into HTML
-            st.markdown(f"""
-            <div style="background:{bg}; border:1.5px solid {acolor}; border-radius:8px;
-                        padding:4px 8px 8px;">
-            """, unsafe_allow_html=True)
-            st.code(result, language=None)
-            st.markdown("</div>", unsafe_allow_html=True)
+            safe = _html.escape(result)
+            st.components.v1.html(f"""
+            <style>
+              body {{ margin:0; padding:0; background:transparent; }}
+              pre {{
+                margin:0; padding:16px 18px;
+                background:{bg};
+                border:1.5px solid {acolor};
+                border-radius:8px;
+                font-family:'Space Mono',monospace;
+                font-size:14px;
+                color:{acolor};
+                white-space:pre-wrap;
+                word-break:break-all;
+                line-height:1.8;
+                overflow-wrap:anywhere;
+                min-height:80px;
+              }}
+            </style>
+            <pre>{safe}</pre>
+            """, height=max(120, min(400, result.count('\n') * 28 + 80)), scrolling=False)
 
             # Stats
             stats = cipher_stats(result)
@@ -481,12 +496,11 @@ with tab2:
 
             top = results[0]
             confidence = min(round(((top['score'] + 300) / 400) * 100, 1), 99.9)
-            top_text_display = top['text'][:250] + ('...' if len(top['text']) > 250 else '')
+            safe_top = _html.escape(top['text'][:250] + ('...' if len(top['text']) > 250 else ''))
 
-            # Header row: shift + confidence (no user text injected into HTML)
             st.markdown(f"""
             <div style="background:#0d2b1a; border:1px solid #00e5a0; border-radius:10px;
-                        padding:20px 24px; margin:16px 0;">
+                        padding:20px 24px; margin:16px 0 8px;">
                 <p style="font-family:'Space Mono',monospace; font-size:11px; color:#00e5a0;
                           letter-spacing:2px; margin:0 0 14px;">&#10003;  MOST LIKELY RESULT</p>
                 <div style="display:flex; align-items:center; gap:32px; flex-wrap:wrap;">
@@ -507,11 +521,27 @@ with tab2:
             </div>
             """, unsafe_allow_html=True)
 
-            # Decrypted text rendered by Streamlit — never injected into HTML
             st.markdown("""<p style="font-family:'Space Mono',monospace; font-size:11px;
-                          color:#8b949e; letter-spacing:2px; margin:4px 0 6px;">
+                          color:#8b949e; letter-spacing:2px; margin:4px 0 4px;">
                           DECRYPTED TEXT</p>""", unsafe_allow_html=True)
-            st.code(top_text_display, language=None)
+            st.components.v1.html(f"""
+            <style>
+              body {{ margin:0; padding:0; background:transparent; }}
+              pre {{
+                margin:0; padding:14px 16px;
+                background:#161b22;
+                border:1px solid #30363d;
+                border-radius:8px;
+                font-family:'Space Mono',monospace;
+                font-size:14px;
+                color:#e6edf3;
+                white-space:pre-wrap;
+                word-break:break-all;
+                line-height:1.7;
+              }}
+            </style>
+            <pre>{safe_top}</pre>
+            """, height=100, scrolling=False)
 
             st.markdown("""
             <p style="font-family:'Space Mono',monospace; font-size:11px; color:#8b949e;
@@ -541,22 +571,27 @@ with tab2:
             st.pyplot(fig)
             plt.close()
 
-            with st.expander("📋 View all 25 attempts"):
+            with st.expander("View all 25 attempts"):
                 for r in results:
-                    tag   = "✓ BEST" if r['likely'] else f"shift {r['shift']:2d}"
+                    tag   = "BEST" if r['likely'] else f"shift {r['shift']:2d}"
                     color = "#00e5a0" if r['likely'] else "#8b949e"
-                    preview = r['text'][:100] + ('...' if len(r['text']) > 100 else '')
-                    # Label row in HTML (no user text)
-                    st.markdown(f"""
-                    <div style="display:flex; gap:16px; padding:6px 0 2px;
-                                border-bottom:1px solid #1c2128;
-                                font-family:'Space Mono',monospace; font-size:12px;">
-                        <span style="color:{color}; min-width:68px;">{tag}</span>
-                        <span style="color:#555; min-width:80px;">score {r['score']:.1f}</span>
+                    safe_preview = _html.escape(r['text'][:100] + ('...' if len(r['text']) > 100 else ''))
+                    st.components.v1.html(f"""
+                    <style>
+                      body {{ margin:0; padding:0; background:transparent; }}
+                      .row {{ display:flex; gap:12px; align-items:baseline;
+                               padding:6px 0; border-bottom:1px solid #1c2128;
+                               font-family:'Space Mono',monospace; font-size:12px; }}
+                      .tag {{ color:{color}; min-width:68px; flex-shrink:0; }}
+                      .score {{ color:#555; min-width:80px; flex-shrink:0; }}
+                      .txt {{ color:#e6edf3; word-break:break-all; }}
+                    </style>
+                    <div class="row">
+                      <span class="tag">{tag}</span>
+                      <span class="score">score {r['score']:.1f}</span>
+                      <span class="txt">{safe_preview}</span>
                     </div>
-                    """, unsafe_allow_html=True)
-                    # Text rendered safely by Streamlit
-                    st.text(preview)
+                    """, height=38, scrolling=False)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
